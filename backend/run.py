@@ -28,7 +28,7 @@ app.register_blueprint(user_bp, url_prefix="/user")
 app.register_blueprint(audit_bp, url_prefix="/")
 # app.register_blueprint(audit_bp, url_prefix="/audit/start")
 
-
+print("TEST tree")
 # @app.route('/healthcheck') test
 # def healthcheck():
 #     return {"status": "OK"}, 200
