@@ -3,6 +3,8 @@ from datetime import datetime,timedelta
 import subprocess
 import json
 import os
+from flask import Response
+
 
 from config import AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_REGION
 
@@ -150,6 +152,46 @@ def get_security_hub_findings():
     except Exception as e:
         return {"error": f"Impossible de récupérer les findings de Security Hub : {str(e)}"}
 
+
+
+#Introductio AWS Well-Architected Tool
+
+def get_well_architected_reviews():
+    """ Récupère les workloads AWS Well-Architected """
+    client = boto3.client(
+        "wellarchitected",
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY,
+        region_name=AWS_REGION
+    )
+
+    try:
+        response = client.list_workloads()
+        workloads = response.get("WorkloadSummaries", [])
+
+        if not workloads:
+            return {"message": "Aucun workload Well-Architected trouvé."}
+
+        workload_data = []
+        for workload in workloads:
+            workload_id = workload.get("WorkloadId")
+            workload_name = workload.get("WorkloadName")
+
+            # Récupérer les détails de chaque workload
+            details = client.get_workload(WorkloadId=workload_id)
+
+            workload_data.append({
+                "ID": workload_id,
+                "Name": workload_name,
+                "Review Owner": workload.get("Owner", "Inconnu"),
+                "Review Summary": details.get("Workload", {}).get("Description", "Pas de description"),
+                "Risk Counts": details.get("Workload", {}).get("RiskCounts", {})
+            })
+
+        return workload_data
+
+    except Exception as e:
+        return {"error": f"Erreur lors de la récupération des workloads AWS Well-Architected: {str(e)}"}
 
 
 #Intégration de Cost Explorer

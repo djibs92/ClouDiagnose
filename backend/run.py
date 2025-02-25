@@ -2,8 +2,8 @@ from flask import Flask
 from config import SQLALCHEMY_DATABASE_URI
 from app.models.models import db, init_db
 from flask_jwt_extended import JWTManager
-from app.routes.user import user_bp  # Import des routes utilisateurs
-from app.routes.audit import audit_bp  # Import des routes audit
+from app.routes.user import user_bp  
+from app.routes.audit import audit_bp  
 
 
 # Ajout du blueprint audit

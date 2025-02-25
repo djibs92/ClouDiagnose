@@ -1,10 +1,10 @@
 from flask import Blueprint, jsonify, send_file, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.services.audit_service import get_ec2_instances, get_s3_buckets, get_rds_instances, get_iam_users, json_serial,run_prowler,get_cost_data,get_security_hub_findings
+from app.services.audit_service import get_ec2_instances, get_s3_buckets, get_rds_instances, get_iam_users, json_serial,run_prowler,get_cost_data,get_security_hub_findings, get_well_architected_reviews
 from app.models.models import db, Audit
 import json
 import os
-
+from app.services.pdf_service import generate_pdf
 
 audit_bp = Blueprint("audit", __name__)
 
@@ -18,9 +18,11 @@ def start_audit():
     s3_buckets = get_s3_buckets()
     rds_instances = get_rds_instances()
     iam_users = get_iam_users()
-    # security_results = run_prowler()
     cost_explorer_data = get_cost_data()
+    well_architected_reviews = get_well_architected_reviews()
     security_findings = get_security_hub_findings()
+    # security_results = run_prowler()
+
     #Cloudwatch a rajouter.
 
     audit_data = {
@@ -29,7 +31,8 @@ def start_audit():
         "rds_instances": rds_instances,
         "iam_users": iam_users,
         "cost_explorer":cost_explorer_data,
-        "security_hub_findings":security_findings
+        "security_hub_findings":security_findings,
+        "Well_Architected_Review":well_architected_reviews,
         # "security_scan": security_results
         #Cloudwatch a rajouter.
 
@@ -99,4 +102,15 @@ def download_audit(audit_id):
     )
 
 
-#
+#Route permettant de télécharger l'audit au format PDF
+
+@audit_bp.route("/audit/download-pdf/<int:audit_id>", methods=["GET"])
+@jwt_required()
+def download_audit_pdf(audit_id):
+    current_user = get_jwt_identity()
+    audit = Audit.query.filter_by(id=audit_id, user_id=current_user).first()
+    if not audit:
+        return jsonify({"error": "Audit introuvable ou accès non autorisé"}), 403
+
+    pdf_path = generate_pdf(audit_id, json.loads(audit.results))
+    return send_file(pdf_path, as_attachment=True, mimetype="application/pdf", download_name=f"audit_{audit_id}.pdf")
